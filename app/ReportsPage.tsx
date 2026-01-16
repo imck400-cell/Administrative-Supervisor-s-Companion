@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useGlobal } from '../context/GlobalState';
-import { Plus, Search, Trash2, Filter, ChevronDown, Check, Calendar, Percent, User, Target, Settings2, AlertCircle, X, ChevronRight, Zap, CheckCircle, FilePlus, FolderOpen, Save, ListOrdered, ArrowUpDown, ArrowUp, ArrowDown, SortAsc, Book, School, Type, Sparkles, BarChart3, LayoutList, Upload, Download, Phone, UserCircle, Activity, Star, FileText, FileSpreadsheet, Share2, Edit, ChevronLeft } from 'lucide-react';
+import { Plus, Search, Trash2, Filter, ChevronDown, Check, Calendar, Percent, User, Target, Settings2, AlertCircle, X, ChevronRight, Zap, CheckCircle, FilePlus, FolderOpen, Save, ListOrdered, ArrowUpDown, ArrowUp, ArrowDown, SortAsc, Book, School, Type, Sparkles, BarChart3, LayoutList, Upload, Download, Phone, UserCircle, Activity, Star, FileText, FileSpreadsheet, Share2, Edit, ChevronLeft, MessageCircle } from 'lucide-react';
 import { TeacherFollowUp, DailyReportContainer, StudentReport } from '../types';
 import * as XLSX from 'xlsx';
 
@@ -68,20 +68,20 @@ export const DailyReportsPage: React.FC = () => {
   }, [currentReport, sortConfig, filterMode, activeTeacherFilter]);
 
   const metricsConfig = [
-    { key: 'attendance', label: 'الحضور', max: data.maxGrades.attendance || 5 },
-    { key: 'appearance', label: 'المظهر', max: data.maxGrades.appearance || 5 },
-    { key: 'preparation', label: 'التحضير', max: data.maxGrades.preparation || 10 },
-    { key: 'supervision_queue', label: 'طابور', max: data.maxGrades.supervision_queue || 5 },
-    { key: 'supervision_rest', label: 'راحة', max: data.maxGrades.supervision_rest || 5 },
-    { key: 'supervision_end', label: 'نهاية', max: data.maxGrades.supervision_end || 5 },
-    { key: 'correction_books', label: 'كتب', max: data.maxGrades.correction_books || 10 },
-    { key: 'correction_notebooks', label: 'دفاتر', max: data.maxGrades.correction_notebooks || 10 },
-    { key: 'correction_followup', label: 'متابعة تصحيح', max: data.maxGrades.correction_followup || 10 },
-    { key: 'teaching_aids', label: 'وسائل تعليمية', max: data.maxGrades.teaching_aids || 10 },
-    { key: 'extra_activities', label: 'أنشطة لا صفية', max: data.maxGrades.extra_activities || 10 },
-    { key: 'radio', label: 'إذاعة', max: data.maxGrades.radio || 5 },
-    { key: 'creativity', label: 'إبداع', max: data.maxGrades.creativity || 5 },
-    { key: 'zero_period', label: 'حصة صفرية', max: data.maxGrades.zero_period || 5 },
+    { key: 'attendance', label: 'الحضور', max: data.maxGrades.attendance || 5, icon: '📅' },
+    { key: 'appearance', label: 'المظهر', max: data.maxGrades.appearance || 5, icon: '👔' },
+    { key: 'preparation', label: 'التحضير', max: data.maxGrades.preparation || 10, icon: '📝' },
+    { key: 'supervision_queue', label: 'طابور', max: data.maxGrades.supervision_queue || 5, icon: '🚶' },
+    { key: 'supervision_rest', label: 'راحة', max: data.maxGrades.supervision_rest || 5, icon: '🥪' },
+    { key: 'supervision_end', label: 'نهاية', max: data.maxGrades.supervision_end || 5, icon: '🚪' },
+    { key: 'correction_books', label: 'كتب', max: data.maxGrades.correction_books || 10, icon: '📚' },
+    { key: 'correction_notebooks', label: 'دفاتر', max: data.maxGrades.correction_notebooks || 10, icon: '📓' },
+    { key: 'correction_followup', label: 'متابعة', max: data.maxGrades.correction_followup || 10, icon: '🔍' },
+    { key: 'teaching_aids', label: 'وسائل', max: data.maxGrades.teaching_aids || 10, icon: '🖥️' },
+    { key: 'extra_activities', label: 'أنشطة', max: data.maxGrades.extra_activities || 10, icon: '⚽' },
+    { key: 'radio', label: 'إذاعة', max: data.maxGrades.radio || 5, icon: '🎙️' },
+    { key: 'creativity', label: 'إبداع', max: data.maxGrades.creativity || 5, icon: '💡' },
+    { key: 'zero_period', label: 'صفرية', max: data.maxGrades.zero_period || 5, icon: '0️⃣' },
   ];
 
   const subjects = ["القرآن الكريم", "التربية الإسلامية", "اللغة العربية", "اللغة الإنجليزية", "الرياضيات", "العلوم", "الكيمياء", "الفيزياء", "الأحياء", "الاجتماعيات", "الحاسوب", "المكتبة", "الفنية", "المختص الاجتماعي", "الأنشطة", "غيرها"];
@@ -212,6 +212,85 @@ export const DailyReportsPage: React.FC = () => {
     return teachers.length && max > 0 ? ((sum / (teachers.length * max)) * 100).toFixed(1) : '0';
   };
 
+  // --- Export Functions ---
+  const generateTeacherReportText = () => {
+    let text = `*📋 تقرير متابعة المعلمين اليومي*\n`;
+    text += `*📅 التاريخ:* ${currentReport?.dayName || ''} ${currentReport?.dateStr || ''}\n`;
+    text += `----------------------------------\n`;
+
+    teachers.forEach((t, i) => {
+      const total = calculateTotal(t);
+      const percent = totalMaxScore > 0 ? ((total / totalMaxScore) * 100).toFixed(1) : '0';
+      
+      text += `\n*${i + 1}. 👤 المعلم:* ${t.teacherName}\n`;
+      text += `   📚 *المادة:* ${t.subjectCode} | 🏫 *الصف:* ${t.className}\n`;
+      text += `   *📊 التقييم التفصيلي:*\n`;
+      
+      metricsConfig.forEach(m => {
+         const val = (t as any)[m.key] || 0;
+         let icon = '✅';
+         let status = 'ممتاز';
+         
+         if (val === 0) { icon = '🔴'; status = 'مشكلة'; }
+         else if (val < m.max) { icon = '⚠️'; status = 'يحتاج تحسين'; }
+         else if (val === m.max) { icon = '🌟'; status = 'مكتمل'; }
+         
+         text += `   ${icon} ${m.icon || '🔹'} *${m.label}:* ${val}/${m.max}\n`;
+      });
+
+      if (t.violations_score > 0 || t.violations_notes.length > 0) {
+          text += `   *⛔ المخالفات:* -${t.violations_score} (${t.violations_notes.join(', ')})\n`;
+      }
+
+      let totalIcon = '🥉';
+      if (Number(percent) >= 90) totalIcon = '🥇';
+      else if (Number(percent) >= 80) totalIcon = '🥈';
+
+      text += `   *📝 المجموع النهائي:* ${total} / ${totalMaxScore} ${totalIcon}\n`;
+      text += `   *📈 النسبة:* ${percent}%\n`;
+      text += `----------------------------------\n`;
+    });
+    
+    text += `\n*إعداد: رفيق المشرف الإداري*`;
+    return text;
+  };
+
+  const exportTeachersTxt = () => {
+    const text = generateTeacherReportText().replace(/\*/g, '');
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `Teachers_Report_${new Date().getTime()}.txt`;
+    link.click();
+  };
+
+  const exportTeachersExcel = () => {
+    const worksheet = XLSX.utils.json_to_sheet(teachers.map(t => {
+      const row: any = {
+          'اسم المعلم': t.teacherName,
+          'المادة': t.subjectCode,
+          'الصف': t.className
+      };
+      metricsConfig.forEach(m => {
+          row[m.label] = (t as any)[m.key];
+      });
+      row['خصم المخالفات'] = t.violations_score;
+      row['ملاحظات المخالفات'] = t.violations_notes.join(', ');
+      row['المجموع'] = calculateTotal(t);
+      row['النسبة'] = `${totalMaxScore > 0 ? ((calculateTotal(t) / totalMaxScore) * 100).toFixed(1) : 0}%`;
+      return row;
+    }));
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Teachers");
+    XLSX.writeFile(workbook, `Teachers_Report_${Date.now()}.xlsx`);
+  };
+
+  const sendTeachersWhatsApp = () => {
+    const text = generateTeacherReportText();
+    const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
+    window.open(url, '_blank');
+  };
+
   return (
     <div className="space-y-4 font-arabic">
       <div className="flex flex-wrap items-center justify-between gap-4 bg-white p-4 rounded-2xl shadow-sm border">
@@ -222,6 +301,18 @@ export const DailyReportsPage: React.FC = () => {
         </div>
         
         <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 bg-slate-50 p-1 rounded-xl border border-slate-200">
+            <button onClick={exportTeachersTxt} className="p-2.5 hover:bg-white text-slate-600 rounded-lg transition-all" title="TXT">
+              <FileText className="w-4 h-4" />
+            </button>
+            <button onClick={exportTeachersExcel} className="p-2.5 hover:bg-white text-green-600 rounded-lg transition-all" title="Excel">
+              <FileSpreadsheet className="w-4 h-4" />
+            </button>
+            <button onClick={sendTeachersWhatsApp} className="p-2.5 hover:bg-white text-green-500 rounded-lg transition-all" title="WhatsApp">
+              <Share2 className="w-4 h-4" />
+            </button>
+          </div>
+
           <div className="relative">
             <button onClick={() => setFilterMode(prev => prev === 'all' ? 'metric' : 'all')} className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold border transition-all text-xs sm:text-sm ${filterMode === 'metric' ? 'bg-orange-100 text-orange-600 border-orange-200' : 'bg-slate-50 text-slate-600 border-slate-200'}`}>
                 <Filter size={16}/> {filterMode === 'metric' ? 'عرض مخصص' : 'عرض الجميع'}
@@ -539,10 +630,11 @@ export const DailyReportsPage: React.FC = () => {
 // --- Violations & Pledges Page (ViolationsPage) ---
 export const ViolationsPage: React.FC = () => {
   const { lang, data, updateData } = useGlobal();
+  const [textModal, setTextModal] = useState<{ id: string, field: 'reason' | 'action', value: string } | null>(null);
   const violations = data.violations || [];
 
   const handleAdd = () => {
-    const newV = { id: Date.now().toString(), studentName: '', type: 'تعهد', reason: '', date: new Date().toISOString().split('T')[0] };
+    const newV = { id: Date.now().toString(), studentName: '', type: 'تعهد', reason: '', action: '', date: new Date().toISOString().split('T')[0] };
     updateData({ violations: [...violations, newV] });
   };
 
@@ -555,7 +647,7 @@ export const ViolationsPage: React.FC = () => {
     let text = `*⚠️ سجل التعهدات والمخالفات*\n`;
     text += `*التاريخ:* ${new Date().toLocaleDateString('ar-EG')}\n------------------\n`;
     violations.forEach((v, i) => {
-      text += `*${i+1}. الطالب:* ${v.studentName}\n🔴 النوع: ${v.type}\n📝 السبب: ${v.reason}\n📅 التاريخ: ${v.date}\n------------------\n`;
+      text += `*${i+1}. الطالب:* ${v.studentName}\n🔴 النوع: ${v.type}\n📝 السبب: ${v.reason}\n🛡️ الإجراء: ${v.action || '---'}\n📅 التاريخ: ${v.date}\n------------------\n`;
     });
     return text;
   };
@@ -566,7 +658,7 @@ export const ViolationsPage: React.FC = () => {
 
   const exportToExcel = () => {
       const worksheet = XLSX.utils.json_to_sheet(violations.map(v => ({
-          'اسم الطالب': v.studentName, 'النوع': v.type, 'السبب': v.reason, 'التاريخ': v.date
+          'اسم الطالب': v.studentName, 'النوع': v.type, 'السبب': v.reason, 'الإجراء': v.action, 'التاريخ': v.date
       })));
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Violations");
@@ -583,39 +675,91 @@ export const ViolationsPage: React.FC = () => {
             <button onClick={handleAdd} className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-xl font-bold hover:bg-red-700 transition-colors shadow-lg shadow-red-200"><AlertCircle size={18}/> {lang === 'ar' ? 'إضافة مخالفة' : 'Add Violation'}</button>
         </div>
       </div>
-      <div className="bg-white rounded-2xl border shadow-sm overflow-hidden">
-        <table className="w-full text-center border-collapse">
-          <thead className="bg-red-50 border-b">
-            <tr className="h-12 text-slate-700">
-              <th className="p-3 border-e font-black">اسم الطالب</th>
-              <th className="border-e font-black">النوع</th>
-              <th className="border-e font-black">السبب</th>
-              <th className="border-e font-black">التاريخ</th>
-              <th className="font-black">إجراء</th>
-            </tr>
-          </thead>
-          <tbody>
-            {violations.length === 0 ? (
-                <tr><td colSpan={5} className="p-8 text-slate-400 italic">لا توجد مخالفات مسجلة</td></tr>
-            ) : violations.map(v => (
-              <tr key={v.id} className="border-b hover:bg-red-50/10 transition-colors h-12">
-                <td className="p-2 border-e"><input className="w-full text-center outline-none bg-transparent font-bold text-slate-800" value={v.studentName} onChange={e => updateV(v.id, 'studentName', e.target.value)} placeholder="اسم الطالب.." /></td>
-                <td className="p-2 border-e">
-                  <select className="outline-none bg-transparent font-bold text-slate-600 cursor-pointer" value={v.type} onChange={e => updateV(v.id, 'type', e.target.value)}>
-                    <option value="تعهد">تعهد</option>
-                    <option value="إنذار">إنذار</option>
-                    <option value="فصل">فصل مؤقت</option>
-                    <option value="استدعاء ولي أمر">استدعاء ولي أمر</option>
-                  </select>
-                </td>
-                <td className="p-2 border-e"><input className="w-full text-center outline-none bg-transparent text-sm" value={v.reason} onChange={e => updateV(v.id, 'reason', e.target.value)} placeholder="سبب المخالفة.." /></td>
-                <td className="p-2 border-e"><input type="date" className="outline-none bg-transparent text-sm font-bold text-slate-500" value={v.date} onChange={e => updateV(v.id, 'date', e.target.value)} /></td>
-                <td className="p-2"><button onClick={() => updateData({ violations: violations.filter(x => x.id !== v.id) })} className="text-red-300 hover:text-red-600 bg-red-50 p-2 rounded-lg transition-colors"><Trash2 size={16}/></button></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="bg-white rounded-2xl border shadow-sm overflow-hidden flex flex-col max-h-[70vh]">
+        <div className="overflow-auto">
+            <table className="w-full text-center border-collapse min-w-[800px]">
+              <thead className="bg-red-50 border-b sticky top-0 z-10 shadow-sm">
+                <tr className="h-12 text-slate-700">
+                  <th className="p-3 border-e font-black w-48">اسم الطالب</th>
+                  <th className="border-e font-black w-32">النوع</th>
+                  <th className="border-e font-black w-64">السبب</th>
+                  <th className="border-e font-black w-64">الإجراء</th>
+                  <th className="border-e font-black w-32">التاريخ</th>
+                  <th className="font-black w-16">إجراء</th>
+                </tr>
+              </thead>
+              <tbody>
+                {violations.length === 0 ? (
+                    <tr><td colSpan={6} className="p-8 text-slate-400 italic">لا توجد مخالفات مسجلة</td></tr>
+                ) : violations.map(v => (
+                  <tr key={v.id} className="border-b hover:bg-red-50/10 transition-colors h-12">
+                    <td className="p-2 border-e"><input className="w-full text-center outline-none bg-transparent font-bold text-slate-800" value={v.studentName} onChange={e => updateV(v.id, 'studentName', e.target.value)} placeholder="اسم الطالب.." /></td>
+                    <td className="p-2 border-e">
+                      <select className="w-full text-center outline-none bg-transparent font-bold text-slate-600 cursor-pointer" value={v.type} onChange={e => updateV(v.id, 'type', e.target.value)}>
+                        <option value="تعهد">تعهد</option>
+                        <option value="إنذار">إنذار</option>
+                        <option value="فصل">فصل مؤقت</option>
+                        <option value="استدعاء ولي أمر">استدعاء ولي أمر</option>
+                      </select>
+                    </td>
+                    <td 
+                      className="p-2 border-e cursor-pointer hover:bg-slate-50 relative group"
+                      onClick={() => setTextModal({ id: v.id, field: 'reason', value: v.reason || '' })}
+                    >
+                      <div className="text-xs font-bold text-slate-600 truncate max-w-[200px] mx-auto">
+                        {v.reason || <span className="text-slate-300">أضف سبب...</span>}
+                      </div>
+                    </td>
+                    <td 
+                      className="p-2 border-e cursor-pointer hover:bg-slate-50 relative group"
+                      onClick={() => setTextModal({ id: v.id, field: 'action', value: v.action || '' })}
+                    >
+                      <div className="text-xs font-bold text-slate-600 truncate max-w-[200px] mx-auto">
+                        {v.action || <span className="text-slate-300">أضف إجراء...</span>}
+                      </div>
+                    </td>
+                    <td className="p-2 border-e"><input type="date" className="w-full text-center outline-none bg-transparent text-sm font-bold text-slate-500" value={v.date} onChange={e => updateV(v.id, 'date', e.target.value)} /></td>
+                    <td className="p-2"><button onClick={() => updateData({ violations: violations.filter(x => x.id !== v.id) })} className="text-red-300 hover:text-red-600 bg-red-50 p-2 rounded-lg transition-colors"><Trash2 size={16}/></button></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+        </div>
       </div>
+
+      {/* Text Edit Modal */}
+      {textModal && (
+        <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
+            <div className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-2xl animate-in zoom-in duration-200">
+                <h3 className="text-lg font-black text-slate-800 mb-4 text-center">
+                    {textModal.field === 'reason' ? 'سبب المخالفة' : 'الإجراء المتخذ'}
+                </h3>
+                <textarea 
+                    className="w-full p-4 border rounded-xl bg-slate-50 text-right font-bold min-h-[120px] outline-none focus:ring-2 focus:ring-blue-200"
+                    placeholder="اكتب هنا..."
+                    value={textModal.value}
+                    onChange={(e) => setTextModal({ ...textModal, value: e.target.value })}
+                ></textarea>
+                <div className="flex gap-2 mt-4">
+                    <button 
+                        onClick={() => {
+                            updateV(textModal.id, textModal.field, textModal.value);
+                            setTextModal(null);
+                        }} 
+                        className="flex-1 bg-blue-600 text-white p-3 rounded-xl font-bold hover:bg-blue-700"
+                    >
+                        حفظ
+                    </button>
+                    <button 
+                        onClick={() => setTextModal(null)} 
+                        className="flex-1 bg-slate-100 text-slate-600 p-3 rounded-xl font-bold hover:bg-slate-200"
+                    >
+                        إلغاء
+                    </button>
+                </div>
+            </div>
+        </div>
+      )}
     </div>
   );
 };
