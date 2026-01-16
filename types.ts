@@ -74,6 +74,8 @@ export interface StudentReport {
   guardianCooperation: string;
   notes: string;
   createdAt: string;
+  isBlacklisted?: boolean;
+  isExcellent?: boolean;
 }
 
 export interface AppData {
