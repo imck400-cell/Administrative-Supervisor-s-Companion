@@ -634,6 +634,7 @@ export const StudentsReportsPage: React.FC = () => {
   const [showListModal, setShowListModal] = useState<'blacklist' | 'excellence' | null>(null);
   const [listSearch, setListSearch] = useState('');
   const [tempListSelected, setTempListSelected] = useState<string[]>([]);
+  const [mainNotesModal, setMainNotesModal] = useState<{ id: string, currentNotes: string[] } | null>(null);
 
   const studentData = data.studentReports || [];
 
@@ -643,7 +644,7 @@ export const StudentsReportsPage: React.FC = () => {
     health: ["ممتاز", "مريض"],
     level: ["ممتاز", "متوسط", "جيد", "ضعيف", "ضعيف جداً"],
     behavior: ["ممتاز", "متوسط", "جيد", "جيد جدا", "مقبول", "ضعيف", "ضعيف جدا"],
-    mainNotes: ["ممتاز", "كثير الكلام", "كثير الشغب", "عدواني", "تطاول على معلم", "اعتداء على طالب جسدياً", "اعتداء على طالب لفظيا", "أخذ أدوات الغير دون أذنهم", "إتلاف ممتلكات طالب", "إتلاف ممتلكات المدرسة"],
+    mainNotes: ["ممتاز", "تأخر عن الطابور", "تأخر عن الحصة الأولى", "تأخر عن حصة", "كثير الكلام", "كثير الشغب", "عدواني", "تطاول على معلم", "اعتداء على طالب جسدياً", "اعتداء على طالب لفظيا", "أخذ أدوات الغير دون أذنهم", "إتلاف ممتلكات المدرسة"],
     eduStatus: ["متعلم", "ضعيف", "أمي"],
     followUp: ["ممتازة", "متوسطة", "ضعيفة"],
     cooperation: ["ممتازة", "متوسطة", "ضعيفة", "متذمر", "كثير النقد", "عدواني"],
@@ -837,6 +838,16 @@ export const StudentsReportsPage: React.FC = () => {
     window.open(url, '_blank');
   };
 
+  const handleListApply = () => {
+    if (tempListSelected.length > 0) {
+      setSelectedStudentNames(tempListSelected);
+      setFilterMode(showListModal === 'blacklist' ? 'blacklist' : 'excellence');
+    }
+    setShowListModal(null);
+    setTempListSelected([]);
+    setListSearch('');
+  };
+
   return (
     <div className="space-y-4 font-arabic animate-in fade-in duration-500">
       <div className="flex flex-wrap items-center justify-between gap-4 bg-white p-4 rounded-2xl shadow-sm border">
@@ -997,13 +1008,7 @@ export const StudentsReportsPage: React.FC = () => {
                      <td className="p-1 border-e">
                         <div className="flex flex-wrap gap-1 justify-center">
                            {s.mainNotes.map(n => <span key={n} className="bg-slate-100 text-[8px] px-1 rounded border">{n}</span>)}
-                           <button onClick={() => {
-                              const note = prompt('اختر: ' + options.mainNotes.join(' - '));
-                              if (note && options.mainNotes.includes(note)) {
-                                 const newNotes = s.mainNotes.includes(note) ? s.mainNotes.filter(x => x !== note) : [...s.mainNotes, note];
-                                 updateStudent(s.id, 'mainNotes', newNotes);
-                              }
-                           }} className="text-[10px] text-blue-600 font-bold">+</button>
+                           <button onClick={() => setMainNotesModal({ id: s.id, currentNotes: s.mainNotes })} className="text-[10px] text-blue-600 font-bold">+</button>
                         </div>
                      </td>
                      <td className="p-1 border-e"><input className="w-full text-[10px] bg-transparent outline-none text-center" value={s.notes} onChange={(e) => updateStudent(s.id, 'notes', e.target.value)} placeholder="..." /></td>
@@ -1021,6 +1026,81 @@ export const StudentsReportsPage: React.FC = () => {
           </table>
         </div>
       </div>
+      
+      {/* Main Notes Selection Modal */}
+      {mainNotesModal && (
+        <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-2xl animate-in zoom-in duration-200">
+            <h3 className="font-bold mb-4 text-center text-slate-800">الملاحظات الأساسية</h3>
+            <div className="grid grid-cols-2 gap-2 max-h-[60vh] overflow-y-auto mb-4">
+              {options.mainNotes.map(note => (
+                 <button 
+                   key={note}
+                   onClick={() => {
+                      const current = mainNotesModal.currentNotes;
+                      const updated = current.includes(note) ? current.filter(n => n !== note) : [...current, note];
+                      setMainNotesModal({...mainNotesModal, currentNotes: updated});
+                   }}
+                   className={`p-2 text-xs border rounded-lg font-bold transition-all ${mainNotesModal.currentNotes.includes(note) ? 'bg-blue-100 border-blue-500 text-blue-800' : 'bg-slate-50 border-slate-200 text-slate-600'}`}
+                 >
+                   {note}
+                 </button>
+              ))}
+            </div>
+            <div className="flex gap-2">
+               <button onClick={() => {
+                  updateStudent(mainNotesModal.id, 'mainNotes', mainNotesModal.currentNotes);
+                  setMainNotesModal(null);
+               }} className="flex-1 bg-blue-600 text-white py-2.5 rounded-xl font-bold hover:bg-blue-700">موافق</button>
+               <button onClick={() => setMainNotesModal(null)} className="flex-1 bg-slate-100 py-2.5 rounded-xl font-bold hover:bg-slate-200">إلغاء</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Excellence/Blacklist Selection Modal */}
+      {showListModal && (
+        <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
+            <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-2xl animate-in zoom-in duration-200">
+                <h3 className="font-black mb-4 text-center text-xl text-slate-800">{showListModal === 'excellence' ? 'قائمة التميز' : 'القائمة السوداء'}</h3>
+                
+                <input 
+                  type="text" 
+                  placeholder="بحث عن اسم..." 
+                  className="w-full p-3 border rounded-xl mb-4 text-sm font-bold bg-slate-50 outline-none focus:ring-2 focus:ring-blue-100"
+                  value={listSearch}
+                  onChange={(e) => setListSearch(e.target.value)}
+                />
+
+                <div className="max-h-[50vh] overflow-y-auto space-y-2 border p-2 rounded-xl bg-slate-50 mb-4">
+                   {studentData
+                      .filter(s => showListModal === 'excellence' ? s.isExcellent : s.isBlacklisted)
+                      .filter(s => s.name.toLowerCase().includes(listSearch.toLowerCase()))
+                      .map(s => (
+                         <div key={s.id} className="flex items-center gap-2 bg-white p-3 rounded-lg border hover:bg-blue-50 transition-colors cursor-pointer" onClick={() => {
+                             if(tempListSelected.includes(s.name)) setTempListSelected(tempListSelected.filter(n => n !== s.name));
+                             else setTempListSelected([...tempListSelected, s.name]);
+                         }}>
+                             <div className={`w-5 h-5 rounded border flex items-center justify-center ${tempListSelected.includes(s.name) ? 'bg-blue-600 border-blue-600' : 'border-slate-300'}`}>
+                                {tempListSelected.includes(s.name) && <Check size={14} className="text-white"/>}
+                             </div>
+                             <span className="text-sm font-bold text-slate-700">{s.name}</span>
+                             <span className="text-xs text-slate-500 mr-auto font-bold bg-slate-100 px-2 py-1 rounded">{s.grade}</span>
+                         </div>
+                      ))
+                   }
+                   {studentData.filter(s => showListModal === 'excellence' ? s.isExcellent : s.isBlacklisted).length === 0 && (
+                     <div className="text-center text-slate-400 py-8 italic font-bold">لا توجد أسماء في هذه القائمة</div>
+                   )}
+                </div>
+
+                <div className="flex gap-2">
+                   <button onClick={handleListApply} className="flex-1 bg-blue-600 text-white py-3 rounded-xl font-black hover:bg-blue-700 transition-colors">عرض المختارين</button>
+                   <button onClick={() => { setShowListModal(null); setTempListSelected([]); }} className="flex-1 bg-slate-100 text-slate-600 py-3 rounded-xl font-black hover:bg-slate-200 transition-colors">إلغاء</button>
+                </div>
+            </div>
+        </div>
+      )}
     </div>
   );
 };
