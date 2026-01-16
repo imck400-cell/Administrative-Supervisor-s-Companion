@@ -190,9 +190,15 @@ export const StudentsReportsPage: React.FC = () => {
 
   const filteredData = useMemo(() => {
     let result = [...studentData];
-    // Strict Filtering for 'student', 'blacklist', 'excellence' modes
-    if (filterMode === 'student' || filterMode === 'blacklist' || filterMode === 'excellence') {
+    // Filter logic for student name selections
+    if (filterMode === 'blacklist' || filterMode === 'excellence') {
       if (selectedStudentNames.length === 0) return [];
+      // STRICT MATCH: Only show students whose names are exactly in the selected list
+      result = result.filter(s => selectedStudentNames.includes(s.name));
+    } else if (filterMode === 'student') {
+      if (selectedStudentNames.length === 0) return [];
+      // Partial match is kept only for the general 'By Student' filter input if desired, 
+      // but based on request, we align to strict selection for clarity.
       result = result.filter(s => selectedStudentNames.some(name => s.name.toLowerCase().includes(name.toLowerCase())));
     } else if (filterMode === 'grade' && filterValue) {
       result = result.filter(s => s.grade === filterValue);
@@ -239,6 +245,7 @@ export const StudentsReportsPage: React.FC = () => {
 
   const handleListApply = () => {
     if (tempListSelected.length > 0) {
+      // Apply strict selected names to the filter
       setSelectedStudentNames(tempListSelected);
       setFilterMode(showListModal === 'blacklist' ? 'blacklist' : 'excellence');
     }
@@ -284,7 +291,7 @@ export const StudentsReportsPage: React.FC = () => {
             </button>
             {showFilterModal && (
               <div className="absolute right-0 sm:left-0 sm:right-auto mt-2 w-[85vw] sm:w-72 bg-white rounded-2xl shadow-2xl border border-slate-100 p-4 z-[100] animate-in fade-in zoom-in duration-200 space-y-4 text-right">
-                 <button onClick={() => setFilterMode('all')} className="w-full text-right p-3 rounded-xl font-bold text-sm hover:bg-slate-50 flex items-center justify-between">{lang === 'ar' ? 'الجميع' : 'All'} {filterMode === 'all' && <Check className="w-4 h-4"/>}</button>
+                 <button onClick={() => { setFilterMode('all'); setSelectedStudentNames([]); }} className="w-full text-right p-3 rounded-xl font-bold text-sm hover:bg-slate-50 flex items-center justify-between">{lang === 'ar' ? 'الجميع' : 'All'} {filterMode === 'all' && <Check className="w-4 h-4"/>}</button>
                  
                  <div className="border rounded-xl p-2 bg-slate-50">
                    <button onClick={() => setFilterMode('student')} className="w-full text-right p-2 rounded-lg font-bold text-sm hover:bg-white flex items-center justify-between">{lang === 'ar' ? 'حسب الطالب' : 'By Student'} {filterMode === 'student' && <Check className="w-4 h-4"/>}</button>
@@ -385,8 +392,8 @@ export const StudentsReportsPage: React.FC = () => {
               {filteredData.length === 0 ? (
                 <tr>
                   <td colSpan={isOnlyMetricView ? 3 + activeMetricFilter.length : 15} className="py-10 text-slate-400 italic text-sm">
-                    {filterMode === 'student' && selectedStudentNames.length === 0 
-                      ? (lang === 'ar' ? 'يرجى إضافة أسماء الطلاب في الفلترة للعرض' : 'Please add student names in filter to display')
+                    {(filterMode === 'student' || filterMode === 'blacklist' || filterMode === 'excellence') && selectedStudentNames.length === 0 
+                      ? (lang === 'ar' ? 'يرجى اختيار أسماء الطلاب من القائمة للعرض' : 'Please select student names to display')
                       : (lang === 'ar' ? 'لا توجد بيانات تطابق هذا البحث' : 'No data matching this search')}
                   </td>
                 </tr>
