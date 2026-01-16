@@ -205,12 +205,22 @@ export const StudentsReportsPage: React.FC = () => {
     return result;
   }, [studentData, filterMode, filterValue, selectedSpecifics, selectedStudentNames]);
 
+  // Suggestions for student input
+  const suggestions = useMemo(() => {
+    if (!studentInput.trim()) return [];
+    return studentData
+      .filter(s => s.name.toLowerCase().includes(studentInput.toLowerCase()))
+      .map(s => s.name)
+      .filter((name, idx, self) => self.indexOf(name) === idx && !selectedStudentNames.includes(name));
+  }, [studentInput, studentData, selectedStudentNames]);
+
   // Determine if we are in "Metric Only" view
   const isOnlyMetricView = filterMode === 'metric' && activeMetricFilter.length > 0;
 
-  const addStudentToFilter = () => {
-    if (studentInput.trim()) {
-      setSelectedStudentNames(prev => [...prev, studentInput.trim()]);
+  const addStudentToFilter = (name?: string) => {
+    const targetName = name || studentInput.trim();
+    if (targetName && !selectedStudentNames.includes(targetName)) {
+      setSelectedStudentNames(prev => [...prev, targetName]);
       setStudentInput('');
     }
   };
@@ -243,7 +253,7 @@ export const StudentsReportsPage: React.FC = () => {
                  <div className="border rounded-xl p-2 bg-slate-50">
                    <button onClick={() => setFilterMode('student')} className="w-full text-right p-2 rounded-lg font-bold text-sm hover:bg-white flex items-center justify-between">{lang === 'ar' ? 'حسب الطالب' : 'By Student'} {filterMode === 'student' && <Check className="w-4 h-4"/>}</button>
                    {filterMode === 'student' && (
-                     <div className="mt-2 space-y-2">
+                     <div className="mt-2 space-y-2 relative">
                         <div className="flex gap-1">
                           <input 
                             type="text" 
@@ -253,8 +263,21 @@ export const StudentsReportsPage: React.FC = () => {
                             onChange={(e) => setStudentInput(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && addStudentToFilter()}
                           />
-                          <button onClick={addStudentToFilter} className="bg-blue-600 text-white p-2 rounded hover:bg-blue-700"><Plus size={14}/></button>
+                          <button onClick={() => addStudentToFilter()} className="bg-blue-600 text-white p-2 rounded hover:bg-blue-700"><Plus size={14}/></button>
                         </div>
+                        {suggestions.length > 0 && (
+                          <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border border-slate-200 rounded-lg shadow-xl max-h-40 overflow-y-auto">
+                            {suggestions.map((name, idx) => (
+                              <button 
+                                key={idx} 
+                                onClick={() => addStudentToFilter(name)}
+                                className="w-full text-right p-2 text-[10px] font-bold hover:bg-blue-50 border-b border-slate-50 last:border-none"
+                              >
+                                {name}
+                              </button>
+                            ))}
+                          </div>
+                        )}
                         <div className="flex flex-wrap gap-1">
                           {selectedStudentNames.map(name => (
                             <span key={name} className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-[9px] flex items-center gap-1">
@@ -288,7 +311,7 @@ export const StudentsReportsPage: React.FC = () => {
           <table className={`w-full text-center border-collapse table-auto ${isOnlyMetricView ? 'min-w-[700px]' : 'min-w-[1600px]'}`}>
             <thead className="bg-[#FFD966] text-slate-800 sticky top-0 z-20">
               <tr className="border-b border-slate-300 h-12">
-                <th rowSpan={2} className="px-3 border-e border-slate-300 w-[140px] text-xs font-black">{lang === 'ar' ? 'اسم الطالب' : 'Student Name'}</th>
+                <th rowSpan={2} className="px-3 border-e border-slate-300 w-[140px] text-xs font-black sticky right-0 bg-[#FFD966] z-30">{lang === 'ar' ? 'اسم الطالب' : 'Student Name'}</th>
                 <th rowSpan={2} className="px-1 border-e border-slate-300 w-20 text-xs font-black">{lang === 'ar' ? 'الصف' : 'Grade'}</th>
                 <th rowSpan={2} className="px-1 border-e border-slate-300 w-16 text-xs font-black">{lang === 'ar' ? 'الشعبة' : 'Section'}</th>
                 
@@ -333,8 +356,8 @@ export const StudentsReportsPage: React.FC = () => {
                 </tr>
               ) : (
                 filteredData.map((s, idx) => (
-                  <tr key={s.id} className="hover:bg-blue-50/20 transition-colors h-10">
-                    <td className="p-1 border-e border-slate-100">
+                  <tr key={s.id} className="hover:bg-blue-50/20 transition-colors h-10 group">
+                    <td className="p-1 border-e border-slate-100 sticky right-0 bg-white z-10 group-hover:bg-blue-50 transition-colors shadow-[2px_0_5px_rgba(0,0,0,0.05)]">
                       <input className="w-full bg-transparent border-none outline-none font-bold text-[10px] text-right" value={s.name} onChange={(e) => updateStudent(s.id, 'name', e.target.value)} />
                     </td>
                     <td className="p-1 border-e border-slate-100">
