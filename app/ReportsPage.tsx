@@ -186,8 +186,10 @@ export const StudentsReportsPage: React.FC = () => {
 
   const filteredData = useMemo(() => {
     let result = [...studentData];
-    if (filterMode === 'student' && selectedStudentNames.length > 0) {
-      result = result.filter(s => selectedStudentNames.some(name => s.name.includes(name)));
+    // Strict Filtering for 'student' mode: show ONLY matches, and EMPTY if no names selected
+    if (filterMode === 'student') {
+      if (selectedStudentNames.length === 0) return [];
+      result = result.filter(s => selectedStudentNames.some(name => s.name.toLowerCase().includes(name.toLowerCase())));
     }
     if (filterMode === 'grade' && filterValue) result = result.filter(s => s.grade === filterValue);
     if (filterMode === 'section' && filterValue) result = result.filter(s => s.section === filterValue);
@@ -321,157 +323,167 @@ export const StudentsReportsPage: React.FC = () => {
               )}
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {filteredData.map((s, idx) => (
-                <tr key={s.id} className="hover:bg-blue-50/20 transition-colors h-10">
-                  <td className="p-1 border-e border-slate-100">
-                    <input className="w-full bg-transparent border-none outline-none font-bold text-[10px] text-right" value={s.name} onChange={(e) => updateStudent(s.id, 'name', e.target.value)} />
+              {filteredData.length === 0 ? (
+                <tr>
+                  <td colSpan={isOnlyMetricView ? 3 + activeMetricFilter.length : 15} className="py-10 text-slate-400 italic text-sm">
+                    {filterMode === 'student' && selectedStudentNames.length === 0 
+                      ? (lang === 'ar' ? 'يرجى إضافة أسماء الطلاب في الفلترة للعرض' : 'Please add student names in filter to display')
+                      : (lang === 'ar' ? 'لا توجد بيانات تطابق هذا البحث' : 'No data matching this search')}
                   </td>
-                  <td className="p-1 border-e border-slate-100">
-                    <select className="bg-transparent font-bold text-[9px] outline-none w-full appearance-none text-center" value={s.grade} onChange={(e) => updateStudent(s.id, 'grade', e.target.value)}>
-                      {optionsAr.grades.map(o => <option key={o} value={o}>{lang === 'ar' ? o : optionsEn.grades[optionsAr.grades.indexOf(o)]}</option>)}
-                    </select>
-                  </td>
-                  <td className="p-1 border-e border-slate-100">
-                    <select className="bg-transparent font-bold text-[9px] outline-none w-full appearance-none text-center" value={s.section} onChange={(e) => updateStudent(s.id, 'section', e.target.value)}>
-                      {optionsAr.sections.map(o => <option key={o} value={o}>{lang === 'ar' ? o : optionsEn.sections[optionsAr.sections.indexOf(o)]}</option>)}
-                    </select>
-                  </td>
-
-                  {!isOnlyMetricView && (
-                    <>
-                      <td className="p-1 border-e border-slate-100">
-                        <select className="bg-transparent font-bold text-[9px] outline-none w-full appearance-none text-center" value={s.gender} onChange={(e) => updateStudent(s.id, 'gender', e.target.value)}>
-                          {optionsAr.gender.map(o => <option key={o} value={o}>{lang === 'ar' ? o : optionsEn.gender[optionsAr.gender.indexOf(o)]}</option>)}
-                        </select>
-                      </td>
-                      <td className="p-1 border-e border-slate-100">
-                        <div className="flex flex-col gap-0.5">
-                          <input className="w-full text-[9px] text-right bg-transparent outline-none" value={s.address} onChange={(e) => updateStudent(s.id, 'address', e.target.value)} placeholder="..." />
-                          <select className="text-[8px] bg-slate-50/50 appearance-none text-center" value={s.workOutside} onChange={(e) => updateStudent(s.id, 'workOutside', e.target.value)}>
-                            {optionsAr.workOutside.map(o => <option key={o} value={o}>{lang === 'ar' ? o : optionsEn.workOutside[optionsAr.workOutside.indexOf(o)]}</option>)}
-                          </select>
-                        </div>
-                      </td>
-                      <td className="p-1 border-e border-slate-100">
-                        <div className="flex flex-col gap-0.5">
-                          <select className="text-[9px] font-bold appearance-none text-center outline-none bg-transparent" value={s.healthStatus} onChange={(e) => updateStudent(s.id, 'healthStatus', e.target.value)}>
-                            {optionsAr.health.map(o => <option key={o} value={o}>{lang === 'ar' ? o : optionsEn.health[optionsAr.health.indexOf(o)]}</option>)}
-                          </select>
-                          {s.healthStatus === 'مريض' && <input className="text-[8px] text-center border-b outline-none" value={s.healthDetails} onChange={(e) => updateStudent(s.id, 'healthDetails', e.target.value)} />}
-                        </div>
-                      </td>
-                      <td className="p-1 border-e border-slate-100">
-                        <div className="flex flex-col gap-0.5">
-                          <input className="text-[9px] font-bold text-right outline-none bg-transparent" value={s.guardianName} onChange={(e) => updateStudent(s.id, 'guardianName', e.target.value)} />
-                          {s.guardianPhones.map((p, i) => (
-                            <div key={i} className="flex gap-0.5 items-center">
-                              <input className="text-[8px] w-full text-center bg-slate-50/50 outline-none" value={p} onChange={(e) => {
-                                const newP = [...s.guardianPhones]; newP[i] = e.target.value; updateStudent(s.id, 'guardianPhones', newP);
-                              }} />
-                              {i === s.guardianPhones.length - 1 && <button onClick={() => updateStudent(s.id, 'guardianPhones', [...s.guardianPhones, ''])} className="text-blue-500 hover:scale-110"><Plus size={10}/></button>}
-                            </div>
-                          ))}
-                        </div>
-                      </td>
-                      <td className="p-1 border-e border-slate-100 bg-[#FFF2CC]/5">
-                        <select className="text-[9px] w-full appearance-none text-center outline-none bg-transparent" value={s.academicReading} onChange={(e) => updateStudent(s.id, 'academicReading', e.target.value)}>
-                          {optionsAr.level.map(o => <option key={o} value={o}>{lang === 'ar' ? o : optionsEn.level[optionsAr.level.indexOf(o)]}</option>)}
-                        </select>
-                      </td>
-                      <td className="p-1 border-e border-slate-100 bg-[#FFF2CC]/5">
-                        <select className="text-[9px] w-full appearance-none text-center outline-none bg-transparent" value={s.academicWriting} onChange={(e) => updateStudent(s.id, 'academicWriting', e.target.value)}>
-                          {optionsAr.level.map(o => <option key={o} value={o}>{lang === 'ar' ? o : optionsEn.level[optionsAr.level.indexOf(o)]}</option>)}
-                        </select>
-                      </td>
-                      <td className="p-1 border-e border-slate-100 bg-[#FFF2CC]/5">
-                        <select className="text-[9px] w-full appearance-none text-center outline-none bg-transparent" value={s.academicParticipation} onChange={(e) => updateStudent(s.id, 'academicParticipation', e.target.value)}>
-                          {optionsAr.level.map(o => <option key={o} value={o}>{lang === 'ar' ? o : optionsEn.level[optionsAr.level.indexOf(o)]}</option>)}
-                        </select>
-                      </td>
-                      <td className="p-1 border-e border-slate-100">
-                        <select className="text-[9px] font-bold w-full appearance-none text-center outline-none bg-transparent" value={s.behaviorLevel} onChange={(e) => updateStudent(s.id, 'behaviorLevel', e.target.value)}>
-                          {optionsAr.behavior.map(o => <option key={o} value={o}>{lang === 'ar' ? o : optionsEn.behavior[optionsAr.behavior.indexOf(o)]}</option>)}
-                        </select>
-                      </td>
-                      <td className="p-1 border-e border-slate-100">
-                        <div className="flex flex-wrap gap-0.5 justify-center max-w-[180px]">
-                          {optionsAr.mainNotes.map((n, nIdx) => (
-                            <button key={n} onClick={() => {
-                              const newN = s.mainNotes.includes(n) ? s.mainNotes.filter(x => x !== n) : [...s.mainNotes, n];
-                              updateStudent(s.id, 'mainNotes', newN);
-                            }} className={`text-[7px] px-1 py-0.5 rounded border leading-none ${s.mainNotes.includes(n) ? 'bg-red-500 text-white' : 'bg-slate-50 text-slate-400'}`}>
-                              {lang === 'ar' ? n : optionsEn.mainNotes[nIdx]}
-                            </button>
-                          ))}
-                          <input className="text-[8px] border-b w-full mt-0.5 text-center outline-none" value={s.otherNotesText} onChange={(e) => updateStudent(s.id, 'otherNotesText', e.target.value)} />
-                        </div>
-                      </td>
-                      <td className="p-1 border-e border-slate-100 bg-[#DDEBF7]/5">
-                        <select className="text-[8px] w-full appearance-none text-center outline-none bg-transparent" value={s.guardianEducation} onChange={(e) => updateStudent(s.id, 'guardianEducation', e.target.value)}>
-                          {optionsAr.eduStatus.map(o => <option key={o} value={o}>{lang === 'ar' ? o : optionsEn.eduStatus[optionsAr.eduStatus.indexOf(o)]}</option>)}
-                        </select>
-                      </td>
-                      <td className="p-1 border-e border-slate-100 bg-[#DDEBF7]/5">
-                        <select className="text-[8px] w-full appearance-none text-center outline-none bg-transparent" value={s.guardianFollowUp} onChange={(e) => updateStudent(s.id, 'guardianFollowUp', e.target.value)}>
-                          {optionsAr.followUp.map(o => <option key={o} value={o}>{lang === 'ar' ? o : optionsEn.followUp[optionsAr.followUp.indexOf(o)]}</option>)}
-                        </select>
-                      </td>
-                      <td className="p-1 border-e border-slate-100 bg-[#DDEBF7]/5">
-                        <select className="text-[8px] w-full appearance-none text-center outline-none bg-transparent" value={s.guardianCooperation} onChange={(e) => updateStudent(s.id, 'guardianCooperation', e.target.value)}>
-                          {optionsAr.cooperation.map(o => <option key={o} value={o}>{lang === 'ar' ? o : optionsEn.cooperation[optionsAr.cooperation.indexOf(o)]}</option>)}
-                        </select>
-                      </td>
-                      <td className="p-1">
-                        <button onClick={() => setShowNotesModal({id: s.id, text: s.notes})} className="p-1.5 bg-slate-100 hover:bg-blue-100 rounded-lg transition-all">
-                          {s.notes ? <CheckCircle size={14} className="text-green-500" /> : <Settings2 size={14} className="text-slate-400" />}
-                        </button>
-                      </td>
-                    </>
-                  )}
-
-                  {isOnlyMetricView && activeMetricFilter.map(mKey => {
-                    const currentVal = (s as any)[mKey];
-                    // Find options group for select if exists
-                    const optKey = mKey === 'healthStatus' ? 'health' : (mKey === 'academicReading' || mKey === 'academicWriting') ? 'level' : mKey;
-                    const possibleOpts = (optionsAr as any)[optKey] || [];
-                    
-                    return (
-                      <td key={mKey} className="p-1 border-e border-slate-100 bg-blue-50/5">
-                        {possibleOpts.length > 0 ? (
-                          <select 
-                            className="text-[10px] w-full bg-transparent font-bold outline-none appearance-none text-center" 
-                            value={currentVal} 
-                            onChange={(e) => updateStudent(s.id, mKey, e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                // Jump to next student's same field
-                                const nextRow = e.currentTarget.closest('tr')?.nextElementSibling;
-                                const nextInput = nextRow?.querySelector(`td:nth-child(${e.currentTarget.closest('td')?.cellIndex! + 1}) select`) as HTMLSelectElement;
-                                if (nextInput) nextInput.focus();
-                              }
-                            }}
-                          >
-                            {possibleOpts.map((o: string) => <option key={o} value={o}>{lang === 'ar' ? o : (optionsEn as any)[optKey]?.[(optionsAr as any)[optKey].indexOf(o)] || o}</option>)}
-                          </select>
-                        ) : (
-                          <input 
-                            className="text-[10px] w-full bg-transparent font-bold text-center outline-none" 
-                            value={currentVal} 
-                            onChange={(e) => updateStudent(s.id, mKey, e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                const nextRow = e.currentTarget.closest('tr')?.nextElementSibling;
-                                const nextInput = nextRow?.querySelector(`td:nth-child(${e.currentTarget.closest('td')?.cellIndex! + 1}) input`) as HTMLInputElement;
-                                if (nextInput) nextInput.focus();
-                              }
-                            }}
-                          />
-                        )}
-                      </td>
-                    );
-                  })}
                 </tr>
-              ))}
+              ) : (
+                filteredData.map((s, idx) => (
+                  <tr key={s.id} className="hover:bg-blue-50/20 transition-colors h-10">
+                    <td className="p-1 border-e border-slate-100">
+                      <input className="w-full bg-transparent border-none outline-none font-bold text-[10px] text-right" value={s.name} onChange={(e) => updateStudent(s.id, 'name', e.target.value)} />
+                    </td>
+                    <td className="p-1 border-e border-slate-100">
+                      <select className="bg-transparent font-bold text-[9px] outline-none w-full appearance-none text-center" value={s.grade} onChange={(e) => updateStudent(s.id, 'grade', e.target.value)}>
+                        {optionsAr.grades.map(o => <option key={o} value={o}>{lang === 'ar' ? o : optionsEn.grades[optionsAr.grades.indexOf(o)]}</option>)}
+                      </select>
+                    </td>
+                    <td className="p-1 border-e border-slate-100">
+                      <select className="bg-transparent font-bold text-[9px] outline-none w-full appearance-none text-center" value={s.section} onChange={(e) => updateStudent(s.id, 'section', e.target.value)}>
+                        {optionsAr.sections.map(o => <option key={o} value={o}>{lang === 'ar' ? o : optionsEn.sections[optionsAr.sections.indexOf(o)]}</option>)}
+                      </select>
+                    </td>
+
+                    {!isOnlyMetricView && (
+                      <>
+                        <td className="p-1 border-e border-slate-100">
+                          <select className="bg-transparent font-bold text-[9px] outline-none w-full appearance-none text-center" value={s.gender} onChange={(e) => updateStudent(s.id, 'gender', e.target.value)}>
+                            {optionsAr.gender.map(o => <option key={o} value={o}>{lang === 'ar' ? o : optionsEn.gender[optionsAr.gender.indexOf(o)]}</option>)}
+                          </select>
+                        </td>
+                        <td className="p-1 border-e border-slate-100">
+                          <div className="flex flex-col gap-0.5">
+                            <input className="w-full text-[9px] text-right bg-transparent outline-none" value={s.address} onChange={(e) => updateStudent(s.id, 'address', e.target.value)} placeholder="..." />
+                            <select className="text-[8px] bg-slate-50/50 appearance-none text-center" value={s.workOutside} onChange={(e) => updateStudent(s.id, 'workOutside', e.target.value)}>
+                              {optionsAr.workOutside.map(o => <option key={o} value={o}>{lang === 'ar' ? o : optionsEn.workOutside[optionsAr.workOutside.indexOf(o)]}</option>)}
+                            </select>
+                          </div>
+                        </td>
+                        <td className="p-1 border-e border-slate-100">
+                          <div className="flex flex-col gap-0.5">
+                            <select className="text-[9px] font-bold appearance-none text-center outline-none bg-transparent" value={s.healthStatus} onChange={(e) => updateStudent(s.id, 'healthStatus', e.target.value)}>
+                              {optionsAr.health.map(o => <option key={o} value={o}>{lang === 'ar' ? o : optionsEn.health[optionsAr.health.indexOf(o)]}</option>)}
+                            </select>
+                            {s.healthStatus === 'مريض' && <input className="text-[8px] text-center border-b outline-none" value={s.healthDetails} onChange={(e) => updateStudent(s.id, 'healthDetails', e.target.value)} />}
+                          </div>
+                        </td>
+                        <td className="p-1 border-e border-slate-100">
+                          <div className="flex flex-col gap-0.5">
+                            <input className="text-[9px] font-bold text-right outline-none bg-transparent" value={s.guardianName} onChange={(e) => updateStudent(s.id, 'guardianName', e.target.value)} />
+                            {s.guardianPhones.map((p, i) => (
+                              <div key={i} className="flex gap-0.5 items-center">
+                                <input className="text-[8px] w-full text-center bg-slate-50/50 outline-none" value={p} onChange={(e) => {
+                                  const newP = [...s.guardianPhones]; newP[i] = e.target.value; updateStudent(s.id, 'guardianPhones', newP);
+                                }} />
+                                {i === s.guardianPhones.length - 1 && <button onClick={() => updateStudent(s.id, 'guardianPhones', [...s.guardianPhones, ''])} className="text-blue-500 hover:scale-110"><Plus size={10}/></button>}
+                              </div>
+                            ))}
+                          </div>
+                        </td>
+                        <td className="p-1 border-e border-slate-100 bg-[#FFF2CC]/5">
+                          <select className="text-[9px] w-full appearance-none text-center outline-none bg-transparent" value={s.academicReading} onChange={(e) => updateStudent(s.id, 'academicReading', e.target.value)}>
+                            {optionsAr.level.map(o => <option key={o} value={o}>{lang === 'ar' ? o : optionsEn.level[optionsAr.level.indexOf(o)]}</option>)}
+                          </select>
+                        </td>
+                        <td className="p-1 border-e border-slate-100 bg-[#FFF2CC]/5">
+                          <select className="text-[9px] w-full appearance-none text-center outline-none bg-transparent" value={s.academicWriting} onChange={(e) => updateStudent(s.id, 'academicWriting', e.target.value)}>
+                            {optionsAr.level.map(o => <option key={o} value={o}>{lang === 'ar' ? o : optionsEn.level[optionsAr.level.indexOf(o)]}</option>)}
+                          </select>
+                        </td>
+                        <td className="p-1 border-e border-slate-100 bg-[#FFF2CC]/5">
+                          <select className="text-[9px] w-full appearance-none text-center outline-none bg-transparent" value={s.academicParticipation} onChange={(e) => updateStudent(s.id, 'academicParticipation', e.target.value)}>
+                            {optionsAr.level.map(o => <option key={o} value={o}>{lang === 'ar' ? o : optionsEn.level[optionsAr.level.indexOf(o)]}</option>)}
+                          </select>
+                        </td>
+                        <td className="p-1 border-e border-slate-100">
+                          <select className="text-[9px] font-bold w-full appearance-none text-center outline-none bg-transparent" value={s.behaviorLevel} onChange={(e) => updateStudent(s.id, 'behaviorLevel', e.target.value)}>
+                            {optionsAr.behavior.map(o => <option key={o} value={o}>{lang === 'ar' ? o : optionsEn.behavior[optionsAr.behavior.indexOf(o)]}</option>)}
+                          </select>
+                        </td>
+                        <td className="p-1 border-e border-slate-100">
+                          <div className="flex flex-wrap gap-0.5 justify-center max-w-[180px]">
+                            {optionsAr.mainNotes.map((n, nIdx) => (
+                              <button key={n} onClick={() => {
+                                const newN = s.mainNotes.includes(n) ? s.mainNotes.filter(x => x !== n) : [...s.mainNotes, n];
+                                updateStudent(s.id, 'mainNotes', newN);
+                              }} className={`text-[7px] px-1 py-0.5 rounded border leading-none ${s.mainNotes.includes(n) ? 'bg-red-500 text-white' : 'bg-slate-50 text-slate-400'}`}>
+                                {lang === 'ar' ? n : optionsEn.mainNotes[nIdx]}
+                              </button>
+                            ))}
+                            <input className="text-[8px] border-b w-full mt-0.5 text-center outline-none" value={s.otherNotesText} onChange={(e) => updateStudent(s.id, 'otherNotesText', e.target.value)} />
+                          </div>
+                        </td>
+                        <td className="p-1 border-e border-slate-100 bg-[#DDEBF7]/5">
+                          <select className="text-[8px] w-full appearance-none text-center outline-none bg-transparent" value={s.guardianEducation} onChange={(e) => updateStudent(s.id, 'guardianEducation', e.target.value)}>
+                            {optionsAr.eduStatus.map(o => <option key={o} value={o}>{lang === 'ar' ? o : optionsEn.eduStatus[optionsAr.eduStatus.indexOf(o)]}</option>)}
+                          </select>
+                        </td>
+                        <td className="p-1 border-e border-slate-100 bg-[#DDEBF7]/5">
+                          <select className="text-[8px] w-full appearance-none text-center outline-none bg-transparent" value={s.guardianFollowUp} onChange={(e) => updateStudent(s.id, 'guardianFollowUp', e.target.value)}>
+                            {optionsAr.followUp.map(o => <option key={o} value={o}>{lang === 'ar' ? o : optionsEn.followUp[optionsAr.followUp.indexOf(o)]}</option>)}
+                          </select>
+                        </td>
+                        <td className="p-1 border-e border-slate-100 bg-[#DDEBF7]/5">
+                          <select className="text-[8px] w-full appearance-none text-center outline-none bg-transparent" value={s.guardianCooperation} onChange={(e) => updateStudent(s.id, 'guardianCooperation', e.target.value)}>
+                            {optionsAr.cooperation.map(o => <option key={o} value={o}>{lang === 'ar' ? o : optionsEn.cooperation[optionsAr.cooperation.indexOf(o)]}</option>)}
+                          </select>
+                        </td>
+                        <td className="p-1">
+                          <button onClick={() => setShowNotesModal({id: s.id, text: s.notes})} className="p-1.5 bg-slate-100 hover:bg-blue-100 rounded-lg transition-all">
+                            {s.notes ? <CheckCircle size={14} className="text-green-500" /> : <Settings2 size={14} className="text-slate-400" />}
+                          </button>
+                        </td>
+                      </>
+                    )}
+
+                    {isOnlyMetricView && activeMetricFilter.map(mKey => {
+                      const currentVal = (s as any)[mKey];
+                      // Find options group for select if exists
+                      const optKey = mKey === 'healthStatus' ? 'health' : (mKey === 'academicReading' || mKey === 'academicWriting') ? 'level' : mKey;
+                      const possibleOpts = (optionsAr as any)[optKey] || [];
+                      
+                      return (
+                        <td key={mKey} className="p-1 border-e border-slate-100 bg-blue-50/5">
+                          {possibleOpts.length > 0 ? (
+                            <select 
+                              className="text-[10px] w-full bg-transparent font-bold outline-none appearance-none text-center" 
+                              value={currentVal} 
+                              onChange={(e) => updateStudent(s.id, mKey, e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  // Jump to next student's same field
+                                  const nextRow = e.currentTarget.closest('tr')?.nextElementSibling;
+                                  const nextInput = nextRow?.querySelector(`td:nth-child(${e.currentTarget.closest('td')?.cellIndex! + 1}) select`) as HTMLSelectElement;
+                                  if (nextInput) nextInput.focus();
+                                }
+                              }}
+                            >
+                              {possibleOpts.map((o: string) => <option key={o} value={o}>{lang === 'ar' ? o : (optionsEn as any)[optKey]?.[(optionsAr as any)[optKey].indexOf(o)] || o}</option>)}
+                            </select>
+                          ) : (
+                            <input 
+                              className="text-[10px] w-full bg-transparent font-bold text-center outline-none" 
+                              value={currentVal} 
+                              onChange={(e) => updateStudent(s.id, mKey, e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  const nextRow = e.currentTarget.closest('tr')?.nextElementSibling;
+                                  const nextInput = nextRow?.querySelector(`td:nth-child(${e.currentTarget.closest('td')?.cellIndex! + 1}) input`) as HTMLInputElement;
+                                  if (nextInput) nextInput.focus();
+                                }
+                              }}
+                            />
+                          )}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
