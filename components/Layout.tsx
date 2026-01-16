@@ -8,7 +8,7 @@ import {
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { lang, setLang, logout, data } = useGlobal();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const t = {
     ar: {

@@ -236,7 +236,7 @@ export const StudentsReportsPage: React.FC = () => {
             </button>
             {showFilterModal && (
               <div className="absolute right-0 sm:left-0 sm:right-auto mt-2 w-[85vw] sm:w-72 bg-white rounded-2xl shadow-2xl border border-slate-100 p-4 z-[100] animate-in fade-in zoom-in duration-200 space-y-4 text-right">
-                 <button onClick={() => { setFilterMode('all'); setSelectedStudentNames([]); setActiveMetricFilter([]); setShowFilterModal(false); }} className="w-full text-right p-3 rounded-xl font-bold text-sm hover:bg-slate-50 flex items-center justify-between">{lang === 'ar' ? 'الجميع' : 'All'} {filterMode === 'all' && <Check className="w-4 h-4"/>}</button>
+                 <button onClick={() => setFilterMode('all')} className="w-full text-right p-3 rounded-xl font-bold text-sm hover:bg-slate-50 flex items-center justify-between">{lang === 'ar' ? 'الجميع' : 'All'} {filterMode === 'all' && <Check className="w-4 h-4"/>}</button>
                  
                  <div className="border rounded-xl p-2 bg-slate-50">
                    <button onClick={() => setFilterMode('student')} className="w-full text-right p-2 rounded-lg font-bold text-sm hover:bg-white flex items-center justify-between">{lang === 'ar' ? 'حسب الطالب' : 'By Student'} {filterMode === 'student' && <Check className="w-4 h-4"/>}</button>
@@ -264,8 +264,17 @@ export const StudentsReportsPage: React.FC = () => {
                    )}
                  </div>
 
-                 <button onClick={() => { setMetricFilterMode(true); setShowFilterModal(false); }} className="w-full text-right p-3 rounded-xl font-bold text-sm hover:bg-slate-50 flex items-center justify-between">{lang === 'ar' ? 'حسب المعيار' : 'By Metric'} {isOnlyMetricView && <Check className="w-4 h-4"/>}</button>
-                 <button onClick={() => { setShowSpecificFilterModal(true); setShowFilterModal(false); }} className="w-full text-right p-3 rounded-xl font-bold text-sm hover:bg-slate-50 flex items-center justify-between">{lang === 'ar' ? 'حسب صفة معينة' : 'By Feature'} {filterMode === 'specific' && <Check className="w-4 h-4"/>}</button>
+                 <button onClick={() => setMetricFilterMode(true)} className="w-full text-right p-3 rounded-xl font-bold text-sm hover:bg-slate-50 flex items-center justify-between">{lang === 'ar' ? 'حسب المعيار' : 'By Metric'} {isOnlyMetricView && <Check className="w-4 h-4"/>}</button>
+                 <button onClick={() => setShowSpecificFilterModal(true)} className="w-full text-right p-3 rounded-xl font-bold text-sm hover:bg-slate-50 flex items-center justify-between">{lang === 'ar' ? 'حسب صفة معينة' : 'By Feature'} {filterMode === 'specific' && <Check className="w-4 h-4"/>}</button>
+
+                 <div className="pt-2 border-t">
+                    <button 
+                      onClick={() => setShowFilterModal(false)}
+                      className="w-full bg-blue-600 text-white p-2.5 rounded-xl font-black text-sm hover:bg-blue-700 transition-all shadow-md active:scale-95"
+                    >
+                      {lang === 'ar' ? 'تطبيق' : 'Apply'}
+                    </button>
+                 </div>
               </div>
             )}
           </div>
