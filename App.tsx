@@ -4,8 +4,8 @@ import { GlobalProvider, useGlobal } from './context/GlobalState';
 import Layout from './components/Layout';
 import Dashboard from './app/Dashboard';
 import SubstitutionPage from './app/SubstitutionPage';
-import { DailyReportsPage, ViolationsPage } from './app/ReportsPage';
-import { Lock, LayoutDashboard, ClipboardCheck, UserX, UserPlus, Users, Sparkles } from 'lucide-react';
+import { DailyReportsPage, ViolationsPage, StudentsReportsPage } from './app/ReportsPage';
+import { Lock, LayoutDashboard, ClipboardCheck, UserX, UserPlus, Users, Sparkles, UserCircle } from 'lucide-react';
 
 const LoginPage: React.FC = () => {
   const { login } = useGlobal();
@@ -61,6 +61,7 @@ const MainApp: React.FC = () => {
       case 'substitute': return <SubstitutionPage />;
       case 'daily': return <DailyReportsPage />;
       case 'violations': return <ViolationsPage />;
+      case 'studentReports': return <StudentsReportsPage />;
       default: return <Dashboard />;
     }
   };
@@ -70,6 +71,7 @@ const MainApp: React.FC = () => {
     { id: 'daily', label: lang === 'ar' ? 'متابعة المعلمين' : 'Teachers Log', icon: <ClipboardCheck className="w-4 h-4" /> },
     { id: 'substitute', label: lang === 'ar' ? 'جدول التغطية' : 'Coverage Log', icon: <UserPlus className="w-4 h-4" /> },
     { id: 'violations', label: lang === 'ar' ? 'التعهدات' : 'Violations', icon: <UserX className="w-4 h-4" /> },
+    { id: 'studentReports', label: lang === 'ar' ? 'تقارير الطلاب' : 'Student Reports', icon: <UserCircle className="w-4 h-4" /> },
   ];
 
   return (

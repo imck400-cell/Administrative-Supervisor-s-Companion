@@ -41,7 +41,7 @@ export interface TeacherFollowUp {
   zero_period: number;
   violations_score: number;
   violations_notes: string[];
-  order?: number; // حقل اختياري لترتيب المعلمين
+  order?: number;
 }
 
 export interface DailyReportContainer {
@@ -49,6 +49,31 @@ export interface DailyReportContainer {
   dayName: string;
   dateStr: string;
   teachersData: TeacherFollowUp[];
+}
+
+export interface StudentReport {
+  id: string;
+  name: string;
+  gender: string;
+  grade: string;
+  section: string;
+  address: string;
+  workOutside: string;
+  healthStatus: string;
+  healthDetails: string;
+  guardianName: string;
+  guardianPhones: string[];
+  academicReading: string;
+  academicWriting: string;
+  academicParticipation: string;
+  behaviorLevel: string;
+  mainNotes: string[];
+  otherNotesText: string;
+  guardianEducation: string;
+  guardianFollowUp: string;
+  guardianCooperation: string;
+  notes: string;
+  createdAt: string;
 }
 
 export interface AppData {
@@ -59,4 +84,5 @@ export interface AppData {
   parentVisits: any[];
   teacherFollowUps: TeacherFollowUp[];
   maxGrades: Record<string, number>;
+  studentReports?: StudentReport[];
 }

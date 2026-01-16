@@ -36,7 +36,8 @@ const defaultData: AppData = {
   violations: [],
   parentVisits: [],
   teacherFollowUps: [],
-  maxGrades: defaultMaxGrades
+  maxGrades: defaultMaxGrades,
+  studentReports: []
 };
 
 const GlobalContext = createContext<GlobalContextType | undefined>(undefined);
