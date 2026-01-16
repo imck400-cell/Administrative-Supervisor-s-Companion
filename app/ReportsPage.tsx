@@ -37,6 +37,8 @@ export const StudentsReportsPage: React.FC = () => {
   const { data, updateData, lang } = useGlobal();
   const [filterMode, setFilterMode] = useState<FilterMode>('all');
   const [filterValue, setFilterValue] = useState('');
+  const [selectedStudentNames, setSelectedStudentNames] = useState<string[]>([]);
+  const [studentInput, setStudentInput] = useState('');
   const [activeMetricFilter, setActiveMetricFilter] = useState<string[]>([]);
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [showNotesModal, setShowNotesModal] = useState<{id: string, text: string} | null>(null);
@@ -184,7 +186,9 @@ export const StudentsReportsPage: React.FC = () => {
 
   const filteredData = useMemo(() => {
     let result = [...studentData];
-    if (filterMode === 'student' && filterValue) result = result.filter(s => s.name.includes(filterValue));
+    if (filterMode === 'student' && selectedStudentNames.length > 0) {
+      result = result.filter(s => selectedStudentNames.some(name => s.name.includes(name)));
+    }
     if (filterMode === 'grade' && filterValue) result = result.filter(s => s.grade === filterValue);
     if (filterMode === 'section' && filterValue) result = result.filter(s => s.section === filterValue);
     if (filterMode === 'specific' && selectedSpecifics.length > 0) {
@@ -197,10 +201,17 @@ export const StudentsReportsPage: React.FC = () => {
       );
     }
     return result;
-  }, [studentData, filterMode, filterValue, selectedSpecifics]);
+  }, [studentData, filterMode, filterValue, selectedSpecifics, selectedStudentNames]);
 
   // Determine if we are in "Metric Only" view
   const isOnlyMetricView = filterMode === 'metric' && activeMetricFilter.length > 0;
+
+  const addStudentToFilter = () => {
+    if (studentInput.trim()) {
+      setSelectedStudentNames(prev => [...prev, studentInput.trim()]);
+      setStudentInput('');
+    }
+  };
 
   return (
     <div className="space-y-4 font-arabic animate-in fade-in duration-500">
@@ -225,8 +236,34 @@ export const StudentsReportsPage: React.FC = () => {
             </button>
             {showFilterModal && (
               <div className="absolute right-0 sm:left-0 sm:right-auto mt-2 w-[85vw] sm:w-72 bg-white rounded-2xl shadow-2xl border border-slate-100 p-4 z-[100] animate-in fade-in zoom-in duration-200 space-y-4 text-right">
-                 <button onClick={() => { setFilterMode('all'); setActiveMetricFilter([]); setShowFilterModal(false); }} className="w-full text-right p-3 rounded-xl font-bold text-sm hover:bg-slate-50 flex items-center justify-between">{lang === 'ar' ? 'الجميع' : 'All'} {filterMode === 'all' && <Check className="w-4 h-4"/>}</button>
-                 <button onClick={() => { setFilterMode('student'); setShowFilterModal(false); }} className="w-full text-right p-3 rounded-xl font-bold text-sm hover:bg-slate-50 flex items-center justify-between">{lang === 'ar' ? 'حسب الطالب' : 'By Student'} {filterMode === 'student' && <Check className="w-4 h-4"/>}</button>
+                 <button onClick={() => { setFilterMode('all'); setSelectedStudentNames([]); setActiveMetricFilter([]); setShowFilterModal(false); }} className="w-full text-right p-3 rounded-xl font-bold text-sm hover:bg-slate-50 flex items-center justify-between">{lang === 'ar' ? 'الجميع' : 'All'} {filterMode === 'all' && <Check className="w-4 h-4"/>}</button>
+                 
+                 <div className="border rounded-xl p-2 bg-slate-50">
+                   <button onClick={() => setFilterMode('student')} className="w-full text-right p-2 rounded-lg font-bold text-sm hover:bg-white flex items-center justify-between">{lang === 'ar' ? 'حسب الطالب' : 'By Student'} {filterMode === 'student' && <Check className="w-4 h-4"/>}</button>
+                   {filterMode === 'student' && (
+                     <div className="mt-2 space-y-2">
+                        <div className="flex gap-1">
+                          <input 
+                            type="text" 
+                            className="flex-1 text-[10px] p-2 rounded border outline-none" 
+                            placeholder={lang === 'ar' ? 'اسم الطالب...' : 'Name...'}
+                            value={studentInput}
+                            onChange={(e) => setStudentInput(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && addStudentToFilter()}
+                          />
+                          <button onClick={addStudentToFilter} className="bg-blue-600 text-white p-2 rounded hover:bg-blue-700"><Plus size={14}/></button>
+                        </div>
+                        <div className="flex flex-wrap gap-1">
+                          {selectedStudentNames.map(name => (
+                            <span key={name} className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-[9px] flex items-center gap-1">
+                              {name} <X size={10} className="cursor-pointer" onClick={() => setSelectedStudentNames(prev => prev.filter(n => n !== name))} />
+                            </span>
+                          ))}
+                        </div>
+                     </div>
+                   )}
+                 </div>
+
                  <button onClick={() => { setMetricFilterMode(true); setShowFilterModal(false); }} className="w-full text-right p-3 rounded-xl font-bold text-sm hover:bg-slate-50 flex items-center justify-between">{lang === 'ar' ? 'حسب المعيار' : 'By Metric'} {isOnlyMetricView && <Check className="w-4 h-4"/>}</button>
                  <button onClick={() => { setShowSpecificFilterModal(true); setShowFilterModal(false); }} className="w-full text-right p-3 rounded-xl font-bold text-sm hover:bg-slate-50 flex items-center justify-between">{lang === 'ar' ? 'حسب صفة معينة' : 'By Feature'} {filterMode === 'specific' && <Check className="w-4 h-4"/>}</button>
               </div>
