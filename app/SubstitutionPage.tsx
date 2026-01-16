@@ -1,7 +1,7 @@
-
 import React, { useState, useMemo } from 'react';
 import { useGlobal } from '../context/GlobalState';
-import { Plus, Trash2, CheckCircle } from 'lucide-react';
+import { Plus, Trash2, CheckCircle, FileText, FileSpreadsheet, Share2 } from 'lucide-react';
+import * as XLSX from 'xlsx';
 
 const SubstitutionPage: React.FC = () => {
   const { lang, data, updateData } = useGlobal();
@@ -46,16 +46,78 @@ const SubstitutionPage: React.FC = () => {
     }
   };
 
+  // --- Export Logic ---
+
+  const generateReportText = () => {
+    let text = `*📋 جدول تغطية الحصص (الاحتياط)*\n`;
+    text += `*التاريخ:* ${new Date().toLocaleDateString('ar-EG')}\n`;
+    text += `----------------------------------\n\n`;
+
+    data.substitutions.forEach((row: any, i) => {
+      text += `*⚠️ الغائب (${i + 1}): ${row.absentTeacher || '---'}*\n`;
+      text += `📅 *الحصص الدراسية:*\n`;
+      for (let n = 1; n <= 7; n++) {
+        const substitute = row[`p${n}`];
+        if (substitute) {
+          text += `   🔹 ح${n}: ${substitute} (✅ مُغطاة)\n`;
+        } else {
+          text += `   🔸 ح${n}: --- (❌ لم تُغطى بعد)\n`;
+        }
+      }
+      text += `----------------------------------\n`;
+    });
+    return text;
+  };
+
+  const exportToExcel = () => {
+    const worksheet = XLSX.utils.json_to_sheet(data.substitutions.map(row => ({
+      'المعلم الغائب': row.absentTeacher,
+      'تاريخ الغياب': row.date,
+      'حصة 1': row.p1, 'حصة 2': row.p2, 'حصة 3': row.p3, 'حصة 4': row.p4,
+      'حصة 5': row.p5, 'حصة 6': row.p6, 'حصة 7': row.p7
+    })));
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Substitutions");
+    XLSX.writeFile(workbook, `Substitutions_${new Date().getTime()}.xlsx`);
+  };
+
+  const exportToTxt = () => {
+    const text = generateReportText().replace(/\*/g, '');
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `Substitutions_${new Date().getTime()}.txt`;
+    link.click();
+  };
+
+  const sendWhatsApp = () => {
+    const url = `https://wa.me/?text=${encodeURIComponent(generateReportText())}`;
+    window.open(url, '_blank');
+  };
+
   return (
     <div className="space-y-4 font-arabic">
-      <div className="bg-white p-4 rounded-xl shadow-sm border flex justify-between items-center">
+      <div className="bg-white p-4 rounded-xl shadow-sm border flex flex-wrap justify-between items-center gap-4">
         <h2 className="text-xl font-black text-slate-800">تغطية الحصص</h2>
-        <button 
-          onClick={handleAddRow}
-          className="bg-blue-600 text-white px-6 py-2 rounded-lg font-bold flex items-center gap-2 hover:bg-blue-700 transition-all"
-        >
-          <Plus className="w-5 h-5" /> إضافة معلم غائب
-        </button>
+        <div className="flex items-center gap-2">
+           <div className="flex items-center gap-1 bg-slate-50 p-1 rounded-xl border border-slate-200">
+            <button onClick={exportToTxt} className="p-2.5 hover:bg-white text-slate-600 rounded-lg transition-all" title="TXT">
+              <FileText className="w-4 h-4" />
+            </button>
+            <button onClick={exportToExcel} className="p-2.5 hover:bg-white text-green-600 rounded-lg transition-all" title="Excel">
+              <FileSpreadsheet className="w-4 h-4" />
+            </button>
+            <button onClick={sendWhatsApp} className="p-2.5 hover:bg-white text-green-500 rounded-lg transition-all" title="WhatsApp">
+              <Share2 className="w-4 h-4" />
+            </button>
+          </div>
+          <button 
+            onClick={handleAddRow}
+            className="bg-blue-600 text-white px-6 py-2 rounded-lg font-bold flex items-center gap-2 hover:bg-blue-700 transition-all"
+          >
+            <Plus className="w-5 h-5" /> إضافة معلم غائب
+          </button>
+        </div>
       </div>
 
       <div className="bg-white rounded-xl shadow-lg border overflow-hidden">

@@ -1,10 +1,10 @@
-
 import React from 'react';
 import { useGlobal } from '../context/GlobalState';
 import { 
   Download, FileSpreadsheet, FileIcon as FilePdf, 
-  Copy, Share2, Plus, Trash2, Edit 
+  Copy, Share2, Plus, Trash2, Edit, FileText
 } from 'lucide-react';
+import * as XLSX from 'xlsx';
 
 interface Column {
   key: string;
@@ -23,20 +23,61 @@ interface DynamicTableProps {
 const DynamicTable: React.FC<DynamicTableProps> = ({ title, columns, data, onAdd, onEdit, onDelete }) => {
   const { lang } = useGlobal();
 
-  const handleShareWhatsApp = (item?: any) => {
-    let text = `*📋 تقرير: ${title}*\n\n`;
+  const generateRichTextReport = (item?: any) => {
     const targetData = item ? [item] : data;
+    let text = `*📋 تقرير: ${title}*\n`;
+    text += `*التاريخ:* ${new Date().toLocaleDateString('ar-EG')}\n`;
+    text += `----------------------------------\n\n`;
 
     targetData.forEach((row, idx) => {
-      text += `🔹 *بند ${idx + 1}:*\n`;
+      text += `*🔹 البند (${idx + 1}):*\n`;
       columns.forEach(col => {
-        text += `▪️ ${col.label}: ${row[col.key]}\n`;
+        const val = row[col.key] || '---';
+        let symbol = '▪️';
+        
+        // Logical formatting with symbols based on values (for WhatsApp visuals)
+        if (typeof val === 'number') {
+           if (val < 5) symbol = '⚠️'; // Highlight low scores
+           else symbol = '⭐';
+        } else if (typeof val === 'string') {
+           if (val.includes('ضعيف') || val.includes('مخالفة') || val.includes('pending')) symbol = '🔴';
+           if (val.includes('ممتاز') || val.includes('تمت') || val.includes('paid')) symbol = '🟢';
+        }
+
+        text += `${symbol} *${col.label}:* ${val}\n`;
       });
       text += `\n`;
     });
 
+    return text;
+  };
+
+  const handleShareWhatsApp = (item?: any) => {
+    const text = generateRichTextReport(item);
     const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
     window.open(url, '_blank');
+  };
+
+  const exportToExcel = () => {
+    const worksheet = XLSX.utils.json_to_sheet(data.map(row => {
+      const formatted: any = {};
+      columns.forEach(col => {
+        formatted[col.label] = row[col.key];
+      });
+      return formatted;
+    }));
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, title);
+    XLSX.writeFile(workbook, `${title}_${new Date().getTime()}.xlsx`);
+  };
+
+  const exportToTxt = () => {
+    const text = generateRichTextReport().replace(/\*/g, '');
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `${title}_${new Date().getTime()}.txt`;
+    link.click();
   };
 
   const handleCopyToClipboard = () => {
@@ -61,11 +102,11 @@ const DynamicTable: React.FC<DynamicTableProps> = ({ title, columns, data, onAdd
             <button onClick={handleCopyToClipboard} className="p-2 hover:bg-white rounded text-blue-600 transition-colors" title="Copy">
               <Copy className="w-4 h-4" />
             </button>
-            <button className="p-2 hover:bg-white rounded text-green-600 transition-colors" title="Excel">
-              <FileSpreadsheet className="w-4 h-4" />
+            <button onClick={exportToTxt} className="p-2 hover:bg-white rounded text-slate-600 transition-colors" title="TXT Export">
+              <FileText className="w-4 h-4" />
             </button>
-            <button className="p-2 hover:bg-white rounded text-red-600 transition-colors" title="PDF">
-              <FilePdf className="w-4 h-4" />
+            <button onClick={exportToExcel} className="p-2 hover:bg-white rounded text-green-600 transition-colors" title="Excel Export">
+              <FileSpreadsheet className="w-4 h-4" />
             </button>
             <button onClick={() => handleShareWhatsApp()} className="p-2 hover:bg-white rounded text-green-500 transition-colors" title="WhatsApp Report">
               <Share2 className="w-4 h-4" />
@@ -94,11 +135,18 @@ const DynamicTable: React.FC<DynamicTableProps> = ({ title, columns, data, onAdd
             ) : (
               data.map((row, idx) => (
                 <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
-                  {columns.map(col => (
-                    <td key={col.key} className="px-6 py-4 text-sm text-slate-700">
-                      {row[col.key]}
-                    </td>
-                  ))}
+                  {columns.map(col => {
+                     const val = row[col.key];
+                     let className = "px-6 py-4 text-sm text-slate-700";
+                     if (typeof val === 'string' && (val.includes('ضعيف') || val.includes('مخالفة'))) {
+                        className += " text-red-600 font-bold";
+                     }
+                     return (
+                        <td key={col.key} className={className}>
+                          {val}
+                        </td>
+                     );
+                  })}
                   <td className="px-6 py-4">
                     <div className="flex items-center justify-center gap-2">
                       <button 

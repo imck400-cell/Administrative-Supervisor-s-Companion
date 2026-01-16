@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useGlobal } from '../context/GlobalState';
-import { Plus, Search, Trash2, Filter, ChevronDown, Check, Calendar, Percent, User, Target, Settings2, AlertCircle, X, ChevronRight, Zap, CheckCircle, FilePlus, FolderOpen, Save, ListOrdered, ArrowUpDown, ArrowUp, ArrowDown, SortAsc, Book, School, Type, Sparkles, FilterIcon, BarChart3, LayoutList, Upload, Download, Phone, UserCircle, Activity, Star } from 'lucide-react';
+import { Plus, Search, Trash2, Filter, ChevronDown, Check, Calendar, Percent, User, Target, Settings2, AlertCircle, X, ChevronRight, Zap, CheckCircle, FilePlus, FolderOpen, Save, ListOrdered, ArrowUpDown, ArrowUp, ArrowDown, SortAsc, Book, School, Type, Sparkles, FilterIcon, BarChart3, LayoutList, Upload, Download, Phone, UserCircle, Activity, Star, FileText, FileSpreadsheet, Share2 } from 'lucide-react';
 import { TeacherFollowUp, DailyReportContainer, StudentReport } from '../types';
 import DynamicTable from '../components/DynamicTable';
 import * as XLSX from 'xlsx';
@@ -261,6 +261,95 @@ export const StudentsReportsPage: React.FC = () => {
     }
   };
 
+  // --- Export & WhatsApp Functions (Shared Logic) ---
+
+  const formatLevel = (val: string) => {
+    if (val === 'ضعيف' || val === 'ضعيف جداً' || val === 'مريض') return `❌ ${val}`;
+    if (val === 'ممتاز' || val === 'جيد جدا') return `✅ ${val}`;
+    return `🔹 ${val}`;
+  };
+
+  const generateReportText = () => {
+    let text = `*📋 تقرير شؤون الطلاب (المفلتر)*\n`;
+    text += `*المدرسة:* ${data.profile.schoolName || 'غير محدد'}\n`;
+    text += `*التاريخ:* ${new Date().toLocaleDateString('ar-EG')}\n`;
+    text += `----------------------------------\n\n`;
+
+    filteredData.forEach((s, i) => {
+      text += `*👤 الطالب (${i + 1}): ${s.name}*\n`;
+      text += `📍 *الصف/الشعبة:* ${s.grade} / ${s.section}\n`;
+      text += `🚻 *النوع:* ${s.gender}\n`;
+      text += `🏠 *السكن:* ${s.address || 'غير متوفر'}\n`;
+      text += `💼 *العمل:* ${s.workOutside}\n`;
+      text += `🏥 *الحالة الصحية:* ${formatLevel(s.healthStatus)}${s.healthDetails ? ` (${s.healthDetails})` : ''}\n`;
+      text += `👨‍👩‍👧 *ولي الأمر:* ${s.guardianName} | ${s.guardianPhones.join(' - ')}\n`;
+      text += `📚 *المستوى العلمي:*\n`;
+      text += `   📖 القراءة: ${formatLevel(s.academicReading)}\n`;
+      text += `   ✍️ الكتابة: ${formatLevel(s.academicWriting)}\n`;
+      text += `   🙋 المشاركة: ${formatLevel(s.academicParticipation)}\n`;
+      text += `🎭 *المستوى السلوكي:* ${formatLevel(s.behaviorLevel)}\n`;
+      
+      if (s.mainNotes.length > 0) {
+        text += `⚠️ *الملاحظات الأساسية:*\n`;
+        s.mainNotes.forEach(note => {
+          text += `   🔴 ${note}\n`;
+        });
+      }
+      
+      text += `🤝 *متابعة ولي الأمر:*\n`;
+      text += `   🎓 التعليم: ${s.guardianEducation}\n`;
+      text += `   📈 المتابعة: ${s.guardianFollowUp}\n`;
+      text += `   🤝 التعاون: ${s.guardianCooperation}\n`;
+      
+      if (s.notes) text += `📝 *ملاحظات أخرى:* ${s.notes}\n`;
+      text += `----------------------------------\n`;
+    });
+    
+    return text;
+  };
+
+  const exportToExcel = () => {
+    const worksheet = XLSX.utils.json_to_sheet(filteredData.map(s => ({
+      'اسم الطالب': s.name,
+      'الصف': s.grade,
+      'الشعبة': s.section,
+      'النوع': s.gender,
+      'العنوان': s.address,
+      'العمل': s.workOutside,
+      'الحالة الصحية': s.healthStatus,
+      'تفاصيل الصحة': s.healthDetails,
+      'ولي الأمر': s.guardianName,
+      'الهواتف': s.guardianPhones.join(', '),
+      'القراءة': s.academicReading,
+      'الكتابة': s.academicWriting,
+      'المشاركة': s.academicParticipation,
+      'السلوك': s.behaviorLevel,
+      'الملاحظات': s.mainNotes.join(', '),
+      'تعليم الولي': s.guardianEducation,
+      'متابعة الولي': s.guardianFollowUp,
+      'تعاون الولي': s.guardianCooperation,
+      'ملاحظات أخرى': s.notes
+    })));
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Students");
+    XLSX.writeFile(workbook, `Students_Report_${new Date().getTime()}.xlsx`);
+  };
+
+  const exportToTxt = () => {
+    const text = generateReportText().replace(/\*/g, ''); // Remove markdown bold for TXT
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `Students_Report_${new Date().getTime()}.txt`;
+    link.click();
+  };
+
+  const sendWhatsApp = () => {
+    const text = generateReportText();
+    const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
+    window.open(url, '_blank');
+  };
+
   return (
     <div className="space-y-4 font-arabic animate-in fade-in duration-500">
       <div className="flex flex-wrap items-center justify-between gap-4 bg-white p-4 rounded-2xl shadow-sm border">
@@ -275,6 +364,19 @@ export const StudentsReportsPage: React.FC = () => {
           <button onClick={bulkAutoFill} className="flex items-center gap-2 bg-purple-50 text-purple-700 px-4 py-2.5 rounded-xl font-bold text-sm border border-purple-200 hover:bg-purple-100 transition-all">
             <Sparkles className="w-4 h-4" /> {lang === 'ar' ? 'التعبئة التلقائية' : 'Auto Fill'}
           </button>
+          
+          {/* Export Buttons */}
+          <div className="flex items-center gap-1 bg-slate-50 p-1 rounded-xl border border-slate-200">
+            <button onClick={exportToTxt} className="p-2.5 hover:bg-white text-slate-600 rounded-lg transition-all" title="TXT">
+              <FileText className="w-4 h-4" />
+            </button>
+            <button onClick={exportToExcel} className="p-2.5 hover:bg-white text-green-600 rounded-lg transition-all" title="Excel">
+              <FileSpreadsheet className="w-4 h-4" />
+            </button>
+            <button onClick={sendWhatsApp} className="p-2.5 hover:bg-white text-green-500 rounded-lg transition-all" title="WhatsApp">
+              <Share2 className="w-4 h-4" />
+            </button>
+          </div>
         </div>
         
         <div className="flex items-center gap-2 flex-wrap">
@@ -439,10 +541,10 @@ export const StudentsReportsPage: React.FC = () => {
                         </td>
                         <td className="p-1 border-e border-slate-100">
                           <div className="flex flex-col gap-0.5">
-                            <select className="text-[9px] font-bold appearance-none text-center outline-none bg-transparent" value={s.healthStatus} onChange={(e) => updateStudent(s.id, 'healthStatus', e.target.value)}>
+                            <select className={`text-[9px] font-bold appearance-none text-center outline-none bg-transparent ${s.healthStatus === 'مريض' ? 'text-red-600' : ''}`} value={s.healthStatus} onChange={(e) => updateStudent(s.id, 'healthStatus', e.target.value)}>
                               {optionsAr.health.map(o => <option key={o} value={o}>{lang === 'ar' ? o : optionsEn.health[optionsAr.health.indexOf(o)]}</option>)}
                             </select>
-                            {s.healthStatus === 'مريض' && <input className="text-[8px] text-center border-b outline-none" value={s.healthDetails} onChange={(e) => updateStudent(s.id, 'healthDetails', e.target.value)} />}
+                            {s.healthStatus === 'مريض' && <input className="text-[8px] text-center border-b outline-none text-red-500" value={s.healthDetails} onChange={(e) => updateStudent(s.id, 'healthDetails', e.target.value)} />}
                           </div>
                         </td>
                         <td className="p-1 border-e border-slate-100">
@@ -459,22 +561,22 @@ export const StudentsReportsPage: React.FC = () => {
                           </div>
                         </td>
                         <td className="p-1 border-e border-slate-100 bg-[#FFF2CC]/5">
-                          <select className="text-[9px] w-full appearance-none text-center outline-none bg-transparent" value={s.academicReading} onChange={(e) => updateStudent(s.id, 'academicReading', e.target.value)}>
+                          <select className={`text-[9px] w-full appearance-none text-center outline-none bg-transparent ${s.academicReading.includes('ضعيف') ? 'text-red-600 font-black' : ''}`} value={s.academicReading} onChange={(e) => updateStudent(s.id, 'academicReading', e.target.value)}>
                             {optionsAr.level.map(o => <option key={o} value={o}>{lang === 'ar' ? o : optionsEn.level[optionsAr.level.indexOf(o)]}</option>)}
                           </select>
                         </td>
                         <td className="p-1 border-e border-slate-100 bg-[#FFF2CC]/5">
-                          <select className="text-[9px] w-full appearance-none text-center outline-none bg-transparent" value={s.academicWriting} onChange={(e) => updateStudent(s.id, 'academicWriting', e.target.value)}>
+                          <select className={`text-[9px] w-full appearance-none text-center outline-none bg-transparent ${s.academicWriting.includes('ضعيف') ? 'text-red-600 font-black' : ''}`} value={s.academicWriting} onChange={(e) => updateStudent(s.id, 'academicWriting', e.target.value)}>
                             {optionsAr.level.map(o => <option key={o} value={o}>{lang === 'ar' ? o : optionsEn.level[optionsAr.level.indexOf(o)]}</option>)}
                           </select>
                         </td>
                         <td className="p-1 border-e border-slate-100 bg-[#FFF2CC]/5">
-                          <select className="text-[9px] w-full appearance-none text-center outline-none bg-transparent" value={s.academicParticipation} onChange={(e) => updateStudent(s.id, 'academicParticipation', e.target.value)}>
+                          <select className={`text-[9px] w-full appearance-none text-center outline-none bg-transparent ${s.academicParticipation.includes('ضعيف') ? 'text-red-600 font-black' : ''}`} value={s.academicParticipation} onChange={(e) => updateStudent(s.id, 'academicParticipation', e.target.value)}>
                             {optionsAr.level.map(o => <option key={o} value={o}>{lang === 'ar' ? o : optionsEn.level[optionsAr.level.indexOf(o)]}</option>)}
                           </select>
                         </td>
                         <td className="p-1 border-e border-slate-100">
-                          <select className="text-[9px] font-bold w-full appearance-none text-center outline-none bg-transparent" value={s.behaviorLevel} onChange={(e) => updateStudent(s.id, 'behaviorLevel', e.target.value)}>
+                          <select className={`text-[9px] font-bold w-full appearance-none text-center outline-none bg-transparent ${s.behaviorLevel.includes('ضعيف') ? 'text-red-600' : ''}`} value={s.behaviorLevel} onChange={(e) => updateStudent(s.id, 'behaviorLevel', e.target.value)}>
                             {optionsAr.behavior.map(o => <option key={o} value={o}>{lang === 'ar' ? o : optionsEn.behavior[optionsAr.behavior.indexOf(o)]}</option>)}
                           </select>
                         </td>
@@ -497,12 +599,12 @@ export const StudentsReportsPage: React.FC = () => {
                           </select>
                         </td>
                         <td className="p-1 border-e border-slate-100 bg-[#DDEBF7]/5">
-                          <select className="text-[8px] w-full appearance-none text-center outline-none bg-transparent" value={s.guardianFollowUp} onChange={(e) => updateStudent(s.id, 'guardianFollowUp', e.target.value)}>
+                          <select className={`text-[8px] w-full appearance-none text-center outline-none bg-transparent ${s.guardianFollowUp === 'ضعيفة' ? 'text-red-600 font-bold' : ''}`} value={s.guardianFollowUp} onChange={(e) => updateStudent(s.id, 'guardianFollowUp', e.target.value)}>
                             {optionsAr.followUp.map(o => <option key={o} value={o}>{lang === 'ar' ? o : optionsEn.followUp[optionsAr.followUp.indexOf(o)]}</option>)}
                           </select>
                         </td>
                         <td className="p-1 border-e border-slate-100 bg-[#DDEBF7]/5">
-                          <select className="text-[8px] w-full appearance-none text-center outline-none bg-transparent" value={s.guardianCooperation} onChange={(e) => updateStudent(s.id, 'guardianCooperation', e.target.value)}>
+                          <select className={`text-[8px] w-full appearance-none text-center outline-none bg-transparent ${s.guardianCooperation === 'عدواني' || s.guardianCooperation === 'ضعيفة' ? 'text-red-600 font-bold' : ''}`} value={s.guardianCooperation} onChange={(e) => updateStudent(s.id, 'guardianCooperation', e.target.value)}>
                             {optionsAr.cooperation.map(o => <option key={o} value={o}>{lang === 'ar' ? o : optionsEn.cooperation[optionsAr.cooperation.indexOf(o)]}</option>)}
                           </select>
                         </td>
